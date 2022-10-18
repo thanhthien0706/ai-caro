@@ -81,25 +81,34 @@ export default {
       },
     };
   },
+  created() {
+    // this.checkDraw();
+  },
   methods: {
     handleChoice(index) {
       if ((this.turn % 2) + 1 == this.player) {
-        if (this.state.data[index] == 0) {
-          this.state.data[index] = 1;
+        let dataState = this.state;
+        if (dataState != null) {
+          if (this.state.data[index] == 0) {
+            this.state.data[index] = 1;
+          }
+          if (this.Win(this.state)) {
+            this.textShow = "Player Won";
+            console.log("Player won");
+            this.isDisabled = true;
+            return;
+          }
         }
-        if (this.Win(this.state)) {
-          this.textShow = "Player Won";
-          console.log("Player won");
-          this.isDisabled = true;
-          return;
-        }
-        this.aiHandleChoice();
-        // this.checkDraw();
-        this.turn += 1;
       }
+
+      if (this.checkDraw()) {
+        return;
+      }
+      this.turn += 1;
     },
 
     aiHandleChoice() {
+      console.log("vao ai ");
       let mn = 2;
       let minChild = null;
       let sz = this.state.size;
@@ -108,16 +117,19 @@ export default {
       for (let i = 0; i < sz; i++) {
         for (let j = 0; j < sz; j++) {
           child = this.move(this.state, i, j);
+          console.log("tim child:", child);
           if (child == null) {
             continue;
           }
           let tmp = this.MiniMax(child, 1, true);
+          console.log(i, j, tmp);
           if (mn > tmp) {
             mn = tmp;
             minChild = child;
           }
         }
       }
+      console.log("tim ra minchild: ", minChild);
       this.state = minChild;
       if (this.Win(this.state)) {
         this.textShow = "AI Won";
@@ -125,17 +137,21 @@ export default {
         this.isDisabled = true;
         return;
       }
-
-      this.checkDraw();
+      if (this.checkDraw()) {
+        return;
+      }
       this.turn += 1;
     },
 
     checkDraw() {
+      let check = false;
       if (this.isEndNode(this.state)) {
+        console.log("Match Draw");
+        this.textShow = "Match Draw";
         this.isDisabled = true;
-        console.log("draw");
-        return;
+        check = true;
       }
+      return check;
     },
 
     move(state, x, y) {
@@ -173,6 +189,7 @@ export default {
     },
 
     AlphaBeta(s, d, a, b, mp) {
+      console.log("vao s", s);
       if (this.isEndNode(s) || d == 0) {
         return this.Value(s);
       }
@@ -222,7 +239,7 @@ export default {
     },
 
     Win(s) {
-      if (s.data == null) {
+      if (s == null) {
         return false;
       }
 
@@ -356,10 +373,11 @@ export default {
         form: "",
       };
     },
+
     checkShow(index) {
       let indexState = this.stateWin.index;
       const sz = this.state.size;
-      if (this.textShow != "") {
+      if (this.textShow != "" && this.stateWin.index != null) {
         if (this.stateWin.form == "column") {
           let arrR = [
             0 * sz + indexState,
@@ -381,6 +399,14 @@ export default {
           let arrR = [2 * sz + 0, 1 * sz + 1, 0 * sz + 2];
           return arrR.includes(index);
         }
+      }
+    },
+  },
+  watch: {
+    turn(newVal) {
+      console.log("data", newVal);
+      if ((newVal % 2) + 1 != this.player) {
+        this.aiHandleChoice();
       }
     },
   },
