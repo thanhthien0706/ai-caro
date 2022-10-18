@@ -343,9 +343,18 @@ export default {
     },
 
     resetHandler() {
-      this.state.data = [0, 0, 0, 0, 0, 0, 0, 0, 0];
-      this.isDisabled = false;
+      this.player = 1;
+      this.turn = 0;
+      this.state = {
+        data: [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        size: 3,
+      };
       this.textShow = "";
+      this.isDisabled = false;
+      this.stateWin = {
+        index: null,
+        form: "",
+      };
     },
     checkShow(index) {
       let indexState = this.stateWin.index;
