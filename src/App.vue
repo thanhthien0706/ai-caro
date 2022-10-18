@@ -16,20 +16,45 @@
 .list_item .item_custom .btn_dot {
   width: 100%;
   height: 50px;
+  font-weight: 700;
+}
+
+.list_item .item_custom .btn_dot:disabled {
+}
+
+.list_item .item_custom .btn_dot.red {
+  color: red;
+}
+
+.list_item .item_custom .btn_dot:disabled.red {
+  opacity: 0.5;
+}
+
+.list_item .item_custom .btn_dot.blue {
+  color: blue;
+}
+
+.list_item .item_custom .btn_dot:disabled.blue {
+  opacity: 0.5;
 }
 </style>
 
 <template>
   <div class="mainContent">
-    <p class="textShow">{{ textShow }}</p>
+    <div class="container-handler">
+      <p class="textShow">{{ textShow }}</p>
+      <button @click="resetHandler">Reset</button>
+    </div>
     <ul class="list_item">
       <li class="item_custom" v-for="(item, index) in state.data" :key="index">
         <button
           class="btn_dot"
           @click="handleChoice(index)"
           :disabled="isDisabled"
+          :class="{ red: item == 1 && item != 0, blue: item != 1 && item != 0 }"
         >
           {{ item == 0 ? "" : item == 1 ? "o" : "x" }}
+          <p v-if="checkShow(index)">oke</p>
         </button>
       </li>
     </ul>
@@ -50,6 +75,10 @@ export default {
       },
       textShow: "",
       isDisabled: false,
+      stateWin: {
+        index: null,
+        form: "",
+      },
     };
   },
   methods: {
@@ -201,19 +230,31 @@ export default {
       let data = s.data;
 
       for (let i = 0; i < sz; i++) {
+        // check row
         if (
           data[i * sz + 0] != 0 &&
           data[i * sz + 0] == data[i * sz + 1] &&
           data[i * sz + 0] == data[i * sz + 2]
         ) {
+          // this.row = i;
+          this.stateWin = {
+            index: i,
+            form: "row",
+          };
           return true;
         }
 
+        // check column
         if (
           data[0 * sz + i] != 0 &&
           data[0 * sz + i] == data[1 * sz + i] &&
           data[0 * sz + i] == data[2 * sz + i]
         ) {
+          // this.column = i;
+          this.stateWin = {
+            index: i,
+            form: "column",
+          };
           return true;
         }
       }
@@ -223,6 +264,10 @@ export default {
         data[0 * sz + 0] == data[1 * sz + 1] &&
         data[0 * sz + 0] == data[2 * sz + 2]
       ) {
+        this.stateWin = {
+          index: null,
+          form: "main",
+        };
         return true;
       }
       if (
@@ -230,6 +275,10 @@ export default {
         data[0 * sz + 2] == data[1 * sz + 1] &&
         data[0 * sz + 2] == data[2 * sz + 0]
       ) {
+        this.stateWin = {
+          index: null,
+          form: "sub",
+        };
         return true;
       }
 
@@ -291,6 +340,39 @@ export default {
         }
       }
       return true;
+    },
+
+    resetHandler() {
+      this.state.data = [0, 0, 0, 0, 0, 0, 0, 0, 0];
+      this.isDisabled = false;
+      this.textShow = "";
+    },
+    checkShow(index) {
+      let indexState = this.stateWin.index;
+      const sz = this.state.size;
+      if (this.textShow != "") {
+        if (this.stateWin.form == "column") {
+          let arrR = [
+            0 * sz + indexState,
+            1 * sz + indexState,
+            2 * sz + indexState,
+          ];
+          return arrR.includes(index);
+        } else if (this.stateWin.form == "row") {
+          let arrR = [
+            indexState * sz + 0,
+            indexState * sz + 1,
+            indexState * sz + 2,
+          ];
+          return arrR.includes(index);
+        } else if (this.stateWin.form == "main") {
+          let arrR = [0 * sz + 0, 1 * sz + 1, 2 * sz + 2];
+          return arrR.includes(index);
+        } else {
+          let arrR = [2 * sz + 0, 1 * sz + 1, 0 * sz + 2];
+          return arrR.includes(index);
+        }
+      }
     },
   },
 };
