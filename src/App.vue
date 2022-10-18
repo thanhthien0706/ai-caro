@@ -377,7 +377,7 @@ export default {
     checkShow(index) {
       let indexState = this.stateWin.index;
       const sz = this.state.size;
-      if (this.textShow != "" && this.stateWin.index != null) {
+      if (this.textShow != "" && this.textShow != "Match Draw") {
         if (this.stateWin.form == "column") {
           let arrR = [
             0 * sz + indexState,
