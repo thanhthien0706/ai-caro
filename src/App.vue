@@ -1,26 +1,297 @@
+<style>
+.mainContent {
+  max-width: 500px;
+}
+
+.mainContent .list_item {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+}
+.list_item .item_custom {
+  flex-basis: 33.33333%;
+  flex-grow: 1;
+}
+
+.list_item .item_custom .btn_dot {
+  width: 100%;
+  height: 50px;
+}
+</style>
+
 <template>
-  <img alt="Vue logo" src="./assets/logo.png">
-  <HelloWorld msg="Welcome to Your Vue.js App"/>
+  <div class="mainContent">
+    <p class="textShow">{{ textShow }}</p>
+    <ul class="list_item">
+      <li class="item_custom" v-for="(item, index) in state.data" :key="index">
+        <button
+          class="btn_dot"
+          @click="handleChoice(index)"
+          :disabled="isDisabled"
+        >
+          {{ item == 0 ? "" : item == 1 ? "o" : "x" }}
+        </button>
+      </li>
+    </ul>
+  </div>
 </template>
 
 <script>
-import HelloWorld from './components/HelloWorld.vue'
-
 export default {
-  name: 'App',
-  components: {
-    HelloWorld
-  }
-}
-</script>
+  name: "App",
+  components: {},
+  data() {
+    return {
+      player: 1,
+      turn: 0,
+      state: {
+        data: [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        size: 3,
+      },
+      textShow: "",
+      isDisabled: false,
+    };
+  },
+  methods: {
+    handleChoice(index) {
+      if ((this.turn % 2) + 1 == this.player) {
+        if (this.state.data[index] == 0) {
+          this.state.data[index] = 1;
+        }
+        if (this.Win(this.state)) {
+          this.textShow = "Player Won";
+          console.log("Player won");
+          this.isDisabled = true;
+          return;
+        }
+        this.aiHandleChoice();
+        // this.checkDraw();
+        this.turn += 1;
+      }
+    },
 
-<style>
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
-}
-</style>
+    aiHandleChoice() {
+      let mn = 2;
+      let minChild = null;
+      let sz = this.state.size;
+      let child;
+
+      for (let i = 0; i < sz; i++) {
+        for (let j = 0; j < sz; j++) {
+          child = this.move(this.state, i, j);
+          if (child == null) {
+            continue;
+          }
+          let tmp = this.MiniMax(child, 1, true);
+          if (mn > tmp) {
+            mn = tmp;
+            minChild = child;
+          }
+        }
+      }
+      this.state = minChild;
+      if (this.Win(this.state)) {
+        this.textShow = "AI Won";
+        console.log("AI won");
+        this.isDisabled = true;
+        return;
+      }
+
+      this.checkDraw();
+      this.turn += 1;
+    },
+
+    checkDraw() {
+      if (this.isEndNode(this.state)) {
+        this.isDisabled = true;
+        console.log("draw");
+        return;
+      }
+    },
+
+    move(state, x, y) {
+      let sz = state.size;
+      if (x < 0 || x >= sz) {
+        return null;
+      }
+
+      if (y < 0 || y >= sz) {
+        return null;
+      }
+
+      if (state.data[x * sz + y] != 0) {
+        return null;
+      }
+
+      let res = 0;
+      for (const value of state.data) {
+        if (value != 0) {
+          res += 1;
+        }
+      }
+
+      let sn = JSON.parse(JSON.stringify(state));
+      if (res % 2 == 0) {
+        sn.data[x * sz + y] = 1;
+      } else {
+        sn.data[x * sz + y] = 2;
+      }
+      return sn;
+    },
+
+    MiniMax(s, d, mp) {
+      return this.AlphaBeta(s, d, -2, 2, mp);
+    },
+
+    AlphaBeta(s, d, a, b, mp) {
+      if (this.isEndNode(s) || d == 0) {
+        return this.Value(s);
+      }
+      let sz = s.size;
+
+      if (mp) {
+        for (let i = 0; i < sz; i++) {
+          for (let j = 0; j < sz; j++) {
+            let child = this.move(s, i, j);
+            if (child == null) {
+              continue;
+            }
+            let tmp = this.AlphaBeta(child, d - 1, a, b, false);
+            a = Math.max(a, tmp);
+            if (a >= b) {
+              break;
+            }
+          }
+        }
+        return a;
+      } else {
+        for (let i = 0; i < sz; i++) {
+          for (let j = 0; j < sz; j++) {
+            let child = this.move(s, i, j);
+            if (child == null) {
+              continue;
+            }
+            let tmp = this.AlphaBeta(child, d - 1, a, b, true);
+            a = Math.min(a, tmp);
+            if (a >= b) {
+              break;
+            }
+          }
+        }
+        return b;
+      }
+    },
+
+    Value(s) {
+      if (this.Win(s)) {
+        if (this.checkMyTurn(s)) {
+          return 1;
+        }
+        return -1;
+      }
+      return 0;
+    },
+
+    Win(s) {
+      if (s.data == null) {
+        return false;
+      }
+
+      let sz = s.size;
+      let data = s.data;
+
+      for (let i = 0; i < sz; i++) {
+        if (
+          data[i * sz + 0] != 0 &&
+          data[i * sz + 0] == data[i * sz + 1] &&
+          data[i * sz + 0] == data[i * sz + 2]
+        ) {
+          return true;
+        }
+
+        if (
+          data[0 * sz + i] != 0 &&
+          data[0 * sz + i] == data[1 * sz + i] &&
+          data[0 * sz + i] == data[2 * sz + i]
+        ) {
+          return true;
+        }
+      }
+
+      if (
+        data[0 * sz + 0] != 0 &&
+        data[0 * sz + 0] == data[1 * sz + 1] &&
+        data[0 * sz + 0] == data[2 * sz + 2]
+      ) {
+        return true;
+      }
+      if (
+        data[0 * sz + 2] != 0 &&
+        data[0 * sz + 2] == data[1 * sz + 1] &&
+        data[0 * sz + 2] == data[2 * sz + 0]
+      ) {
+        return true;
+      }
+
+      return false;
+    },
+
+    checkMyTurn(s) {
+      let res = 0;
+      for (let x of s.data) {
+        if (x == 0) {
+          res += 1;
+        }
+      }
+      if (res % 2 == 0) {
+        return true;
+      }
+      return false;
+    },
+
+    isEndNode(s) {
+      let sz = s.size;
+      let data = s.data;
+      for (let i = 0; i < sz; i++) {
+        if (
+          data[i * sz + 0] != 0 &&
+          data[i * sz + 0] == data[i * sz + 1] &&
+          data[i * sz + 0] == data[i * sz + 2]
+        ) {
+          return true;
+        }
+
+        if (
+          data[0 * sz + i] != 0 &&
+          data[0 * sz + i] == data[1 * sz + i] &&
+          data[0 * sz + i] == data[2 * sz + i]
+        ) {
+          return true;
+        }
+      }
+
+      if (
+        data[0 * sz + 0] != 0 &&
+        data[0 * sz + 0] == data[1 * sz + 1] &&
+        data[0 * sz + 0] == data[2 * sz + 2]
+      ) {
+        return true;
+      }
+      if (
+        data[0 * sz + 2] != 0 &&
+        data[0 * sz + 2] == data[1 * sz + 1] &&
+        data[0 * sz + 2] == data[2 * sz + 0]
+      ) {
+        return true;
+      }
+
+      for (const value of data) {
+        if (value == 0) {
+          return false;
+        }
+      }
+      return true;
+    },
+  },
+};
+</script>
